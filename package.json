@@ -1,0 +1,15 @@
+{
+  "name": "deepl-proxy",
+  "version": "1.0.0",
+  "description": "A simple proxy for DeepL API to bypass CORS issues",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "cors": "^2.8.5",
+    "axios": "^0.21.1",
+    "dotenv": "^16.0.0"
+  }
+}
