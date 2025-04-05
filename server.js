@@ -32,5 +32,10 @@ app.post("/translate", async (req, res) => {
   }
 });
 
+app.get("/ping", (req, res) => {
+  console.log("Ping received at", new Date());
+  res.send("pong");
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
