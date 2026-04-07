@@ -8,20 +8,15 @@ app.use(cors());
 app.use(express.json());
 
 const DEEPL_API_KEY = process.env.DEEPL_API_KEY;
+const PORT = process.env.PORT || 5000;
 
 // Helper: detect target language based on host + path
-function detectTargetLang(req) {
-  const host = req.headers.host || "";
-  const referer = req.headers.referer || "";
-
-  // Combine host + referer for better detection
-  const url = `${host}${referer}`;
-
+function detectTargetLang(host, path = "") {
   if (host.includes("oaksantum.de")) {
     return "DE";
   }
 
-  if (url.includes("/en-eu")) {
+  if (path.includes("/en-eu")) {
     return "EN";
   }
 
@@ -31,20 +26,21 @@ function detectTargetLang(req) {
 
 app.post("/translate", async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, path } = req.body;
 
     if (!text) {
       return res.status(400).json({ error: "Missing text" });
     }
 
-    const target_lang = detectTargetLang(req);
+    const host = req.headers.host || "";
+    const target_lang = detectTargetLang(host, path);
 
     const response = await axios.post(
       "https://api-free.deepl.com/v2/translate",
       new URLSearchParams({
         text,
         target_lang,
-        // source_lang NOT provided → DeepL auto-detects
+        // DeepL auto-detects source language
       }).toString(),
       {
         headers: {
@@ -74,15 +70,14 @@ setInterval(() => {
   axios
     .get(`http://localhost:${PORT}/ping`)
     .then(() => console.log("✅ Server is awake!"))
-    .catch((err) => console.error("❌ Error keeping server awake:", err));
-}, 14 * 60 * 1000); // 14 minutes in milliseconds
+    .catch((err) => console.error("❌ Error keeping server awake:", err.message));
+}, 14 * 60 * 1000); // 14 minutes
 
 app.get("/ping", (req, res) => {
   console.log("Ping received at", new Date());
   res.status(200).send("OK");
 });
 
-const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
   console.log(`✅ Server running on port ${PORT}`)
 );
