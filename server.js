@@ -24,8 +24,6 @@ app.post("/translate", async (req, res) => {
     if (!text) {
       return res.status(400).json({ error: "Missing text" });
     }
-    
-    console.log("LANG DETECTION:", { host, path, target_lang });
 
     const target_lang = detectTargetLang(host, path);
 
