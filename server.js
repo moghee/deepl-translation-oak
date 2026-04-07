@@ -37,16 +37,14 @@ app.post("/translate", async (req, res) => {
     const target_lang = detectTargetLang(host, path);
 
     // 2. DeepL Request with HEADER-BASED Authentication
-    const response = await axios({
+const response = await axios({
       method: 'post',
       url: DEEPL_URL,
-      // The body now ONLY contains data, NO API key
       data: {
-        text: [text], // DeepL prefers text in an array
+        text: [text], // Sending as array
         target_lang: target_lang
       },
       headers: {
-        // This is the crucial fix:
         "Authorization": `DeepL-Auth-Key ${DEEPL_API_KEY}`,
         "Content-Type": "application/json",
       },
