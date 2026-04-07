@@ -26,42 +26,33 @@ function detectTargetLang(host = "", path = "") {
 }
 
 app.post("/translate", async (req, res) => {
+  console.log("--- NEW REQUEST RECEIVED ---");
+  console.log("Body:", req.body); // Check if host/path/text are arriving
+
   try {
-    // 1. Extract data with safety defaults to prevent the .includes() crash
     const { text, path = "", host = "" } = req.body;
-
-    if (!text) {
-      return res.status(400).json({ error: "Missing text" });
-    }
-
     const target_lang = detectTargetLang(host, path);
+    
+    console.log(`Attempting DeepL call: [${text.substring(0, 20)}...] to ${target_lang}`);
 
-    // 2. DeepL Request with HEADER-BASED Authentication
-const response = await axios({
+    const response = await axios({
       method: 'post',
       url: DEEPL_URL,
-      data: {
-        text: [text], // Sending as array
-        target_lang: target_lang
-      },
+      data: { text: [text], target_lang: target_lang },
       headers: {
         "Authorization": `DeepL-Auth-Key ${DEEPL_API_KEY}`,
         "Content-Type": "application/json",
       },
     });
 
-    // DeepL returns { translations: [{ text: "...", detected_source_language: "..." }] }
+    console.log("DeepL Response Status:", response.status);
+    console.log("DeepL Data:", JSON.stringify(response.data));
+
     res.json(response.data);
-
   } catch (error) {
-    // Better error logging for debugging
-    const errorDetails = error.response?.data || error.message;
-    console.error("DeepL API Error:", errorDetails);
-
-    res.status(500).json({
-      error: "Translation failed",
-      details: errorDetails,
-    });
+    // This logs the SPECIFIC reason DeepL rejected you
+    console.error("DEBUG ERROR:", error.response?.data || error.message);
+    res.status(500).json({ error: "Failed", details: error.response?.data });
   }
 });
 
