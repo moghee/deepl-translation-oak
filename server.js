@@ -15,34 +15,37 @@ const DEEPL_URL = DEEPL_API_KEY.endsWith(":fx")
   ? "https://api-free.deepl.com/v2/translate" 
   : "https://api.deepl.com/v2/translate";
 
-function detectTargetLang(host, path = "") {
-  // Check for German Domain
-  if (host.includes("oaksantum.de")) return "DE";
-  
-  // Check for English path (case insensitive and handles slashes better)
-  if (path.toLowerCase().includes("en-eu")) return "EN-GB"; // DeepL prefers EN-GB or EN-US
-  
-  // Default to Polish
+// Updated detectTargetLang with safety defaults
+function detectTargetLang(host = "", path = "") {
+  const safeHost = String(host || "").toLowerCase();
+  const safePath = String(path || "").toLowerCase();
+
+  if (safeHost.includes("oaksantum.de")) return "DE";
+  if (safePath.includes("en-eu")) return "EN-GB"; // DeepL requires EN-GB or EN-US
   return "PL";
 }
 
 app.post("/translate", async (req, res) => {
   try {
-    const { text, path, host } = req.body;
-    
+    // 1. Extract data (with fallbacks to prevent the .includes error)
+    const { text, path = "", host = "" } = req.body;
+
     if (!text) {
       return res.status(400).json({ error: "Missing text" });
     }
 
     const target_lang = detectTargetLang(host, path);
 
-    // DeepL expects x-www-form-urlencoded for this endpoint
-    const params = new URLSearchParams();
-    params.append("auth_key", DEEPL_API_KEY); // You can also pass it here
-    params.append("text", text);
-    params.append("target_lang", target_lang);
-
-    const response = await axios.post(DEEPL_URL, params.toString(), {
+    // 2. DeepL Request using x-www-form-urlencoded
+    const response = await axios({
+      method: 'post',
+      url: DEEPL_URL,
+      // Axios automatically encodes this correctly if you use URLSearchParams
+      data: new URLSearchParams({
+        auth_key: DEEPL_API_KEY,
+        text: text,
+        target_lang: target_lang
+      }).toString(),
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
