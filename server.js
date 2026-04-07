@@ -27,7 +27,7 @@ function detectTargetLang(host = "", path = "") {
 
 app.post("/translate", async (req, res) => {
   try {
-    // 1. Extract data (with fallbacks to prevent the .includes error)
+    // 1. Extract data with safety defaults to prevent the .includes() crash
     const { text, path = "", host = "" } = req.body;
 
     if (!text) {
@@ -36,28 +36,33 @@ app.post("/translate", async (req, res) => {
 
     const target_lang = detectTargetLang(host, path);
 
-    // 2. DeepL Request using x-www-form-urlencoded
+    // 2. DeepL Request with HEADER-BASED Authentication
     const response = await axios({
       method: 'post',
       url: DEEPL_URL,
-      // Axios automatically encodes this correctly if you use URLSearchParams
-      data: new URLSearchParams({
-        auth_key: DEEPL_API_KEY,
-        text: text,
+      // The body now ONLY contains data, NO API key
+      data: {
+        text: [text], // DeepL prefers text in an array
         target_lang: target_lang
-      }).toString(),
+      },
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        // This is the crucial fix:
+        "Authorization": `DeepL-Auth-Key ${DEEPL_API_KEY}`,
+        "Content-Type": "application/json",
       },
     });
 
+    // DeepL returns { translations: [{ text: "...", detected_source_language: "..." }] }
     res.json(response.data);
 
   } catch (error) {
-    console.error("DeepL API Error:", error.response?.data || error.message);
+    // Better error logging for debugging
+    const errorDetails = error.response?.data || error.message;
+    console.error("DeepL API Error:", errorDetails);
+
     res.status(500).json({
       error: "Translation failed",
-      details: error.response?.data || error.message,
+      details: errorDetails,
     });
   }
 });
